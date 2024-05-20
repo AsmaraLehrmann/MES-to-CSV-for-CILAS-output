@@ -1,0 +1,48 @@
+import os
+import csv
+
+def process_mes_file(input_file):
+    output_rows = []
+    with open(input_file, 'r') as file:
+        lines = file.readlines()
+        core_name = lines[4].strip()
+        date = lines[53].strip()
+
+        # Process um values
+        um_values = lines[45:144]
+        um_values = [float(value.strip()) for value in um_values]
+
+        # Process percent values
+        percent_values = lines[145:244]
+        percent_values = [float(value.strip()) for value in percent_values]
+
+        # Calculate individual percentages
+        indiv_perc = [percent_values[0]]  # First value remains the same
+        for i in range(1, len(percent_values)):
+            indiv_perc.append(percent_values[i] - percent_values[i - 1])
+
+        # Zip the data together
+        for um, percent, indiv_percent in zip(um_values, percent_values, indiv_perc):
+            output_rows.append([core_name, date, um, percent, indiv_percent])
+
+    return output_rows
+
+def write_to_csv(output_file, rows):
+    with open(output_file, 'w', newline='') as file:
+        writer = csv.writer(file)
+        writer.writerow(["Core name", "Date", "um", "percent", "indiv perc"])
+        writer.writerows(rows)
+
+def process_folder(folder_path, output_folder):
+    for filename in os.listdir(folder_path):
+        if filename.endswith('.MES'):
+            input_file = os.path.join(folder_path, filename)
+            output_file = os.path.join(output_folder, os.path.splitext(filename)[0] + '.csv')
+            rows = process_mes_file(input_file)
+            write_to_csv(output_file, rows)
+            print(f"Processed {filename} and saved as {output_file}")
+
+# Example usage:
+input_folder = 'path/to/input_folder'
+output_folder = 'path/to/output_folder'
+process_folder(input_folder, output_folder)
